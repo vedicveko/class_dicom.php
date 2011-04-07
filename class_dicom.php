@@ -3,6 +3,13 @@
 define('TOOLKIT_DIR', '/usr/local/dicom/bin');
 
 /*
+
+Dean Vaughan 2011 <dean@deanvaughan.org>
+http://www.deanvaughan.org
+
+*/
+
+/*
 $d = new dicom_tag;
 $d->file = 'SOME_IMAGE.dcm';
 $d->load_tags();
@@ -42,7 +49,7 @@ class dicom_tag {
         $t = preg_match_all("/\=(.*)\#/", $line, $matches);
         if(isset($matches[1][0])) {
           $val = $matches[1][0];
-          $this->tags["$ge"] = rtrim($val, '');
+          $this->tags["$ge"] = rtrim($val);
         }
       }
     }
@@ -86,6 +93,7 @@ class dicom_convert {
   var $transfer_syntax = '';
   var $jpg_file = '';
   var $tiff_file = '';
+  var $tn_file = '';
   
   // REQUIRES IMAGE MAGICK
   function dcm_to_jpg() {
@@ -105,7 +113,7 @@ class dicom_convert {
 
     if(strstr($this->transfer_syntax, 'LittleEndian')) {
       $convert_cmd = TOOLKIT_DIR . "/dcm2pnm +Tn --write-tiff --use-window 1 \"" . $this->file . "\" \"" . $this->tiff_file . "\"";
-      $out = `$convert_cmd`;
+      $out = Execute($convert_cmd);
 
       if(file_exists($this->tiff_file)) {
         $filesize = filesize($this->tiff_file);
@@ -113,11 +121,11 @@ class dicom_convert {
 
       if($filesize < 10) {
         $convert_cmd = TOOLKIT_DIR . "/dcm2pnm +Wm +Tn --write-tiff \"" . $this->file . "\" \"" . $this->tiff_file . "\"";
-        $out = `$convert_cmd`;
+        $out = Execute($convert_cmd);
       }
 
       $convert_cmd = "convert -quality $jpg_quality \"" . $this->tiff_file . "\" \"" . $this->jpg_file . "\"";
-      $out = `$convert_cmd`;
+      $out = Execute($convert_cmd);
       if(file_exists($this->tiff_file)) {
         unlink($this->tiff_file);
       }
@@ -129,7 +137,7 @@ class dicom_convert {
       }
 
       $convert_cmd = TOOLKIT_DIR . "/dcmj2pnm +oj +Jq $jpg_quality --use-window 1 \"" . $this->file . "\" \"" . $this->jpg_file . "\"";
-      $out = `$convert_cmd`;
+      $out = Execute($convert_cmd);
 
       if(file_exists($this->jpg_file)) {
         $filesize = filesize($this->jpg_file);
@@ -137,7 +145,7 @@ class dicom_convert {
 
       if($filesize < 10) {
         $convert_cmd = TOOLKIT_DIR . "/dcmj2pnm +Wm +oj +Jq $jpg_quality \"" . $this->file . "\" \"" . $this->jpg_file . "\"";
-        $out = `$convert_cmd`;
+        $out = Execute($convert_cmd);
       }
     }
 
@@ -152,7 +160,7 @@ class dicom_convert {
     $this->tn_file = preg_replace('/.jpg$/', '_tn.jpg', $this->tn_file);
 
     $convert_cmd = "convert -resize 125 -quality 75 \"" . $this->jpg_file . "\" \"" . $this->tn_file . "\"";
-    $out = `$convert_cmd`;
+    $out = Execute($convert_cmd);
     return($this->tn_file);
   }
 
@@ -160,18 +168,35 @@ class dicom_convert {
 
   }
 
-  function uncompress() {
+  function uncompress($new_file = '') {
+    if(!$new_file) {
+      $new_file = $this->file;
+    }
 
+    $uncompress_cmd = TOOLKIT_DIR . "/dcmdjpeg \"" . $this->file . "\" \"" . $new_file . "\"";
+    $out = Execute($uncompress_cmd);
+    return($new_file);
   }
 
-  function compress() {
+// THIS REALLY SHOULD BE EXPANDED TO INCLUDE OTHER COMPRESSION OPTIONS
+  function compress($new_file = '') {
+    if(!$new_file) {
+      $new_file = $this->file;
+    }
 
+    $uncompress_cmd = TOOLKIT_DIR . "/dcmcjpeg \"" . $this->file . "\" \"" . $new_file . "\"";
+    $out = Execute($uncompress_cmd);
+    return($new_file);
   }
+
 
 }
 
 
 class dicom_net {
+
+  var $transfer_syntax = '';
+  var $file = '';
 
   function store_server($port, $dcm_dir, $handler_script, $config_file, $debug = 0) {
     $dflag = '';
@@ -184,20 +209,70 @@ class dicom_net {
 
   function echoscu($host, $port, $my_ae = 'DEANO', $remote_ae = 'DEANO') {
     $ping_cmd = TOOLKIT_DIR . "/echoscu -ta 5 -td 5 -to 5 -aet \"$my_ae\" -aec \"$remote_ae\" $host $port";
-    $out = `$ping_cmd`;
+    $out = Execute($ping_cmd);
     if(!$out) {
       return(0);
     }
     return($out);
   }
 
-  function send_dcm() {
+  function send_dcm($host, $port, $my_ae = 'DEANO', $remote_ae = 'DEANO', $send_batch = 0) {
+
+    if(!$this->transfer_syntax) {
+      $tags = new dicom_tag;
+      $tags->file = $this->file;
+      $tags->load_tags();
+      $this->transfer_syntax = $tags->get_tag('0002', '0010');
+    }
+
+    $ts_flag = '';
+    switch($this->transfer_syntax) {
+      case 'JPEGBaseline':
+        $ts_flag = '-xy';
+      break;
+      case 'JPEGExtended:Process2+4':
+        $ts_flag = '-xx';
+      break;
+      case 'JPEGLossless:Non-hierarchical-1stOrderPrediction':
+        $ts_flag = '-xs';
+      break;
+    }
+
+    $to_send = $this->file;
+
+    if($send_batch) {
+      $to_send = dirname($this->file);
+      $send_command = TOOLKIT_DIR . "/storescu -ta 10 -td 10 -to 10 $ts_flag -aet \"$my_ae\" -aec $remote_ae $host $port +sd \"$to_send\"";
+    }
+    else {
+      $send_command = TOOLKIT_DIR . "/storescu -ta 10 -td 10 -to 10 $ts_flag -aet \"$my_ae\" -aec $remote_ae $host $port \"$to_send\"";
+    }
+
+    $out = Execute($send_command); 
+    if($out) {
+      return($out);
+    }
+    return(0);
 
   }
 
 
 }
 
+### CAPTURES ALL OF THE GOOD OUTPUTS!
+function Execute($command) {
 
+  $command .= ' 2>&1';
+  $handle = popen($command, 'r');
+  $log = '';
+
+  while (!feof($handle)) {
+    $line = fread($handle, 1024);
+    $log .= $line;
+  }
+  pclose($handle);
+
+  return $log;
+}
 
 ?>
