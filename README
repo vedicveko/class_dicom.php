@@ -1,0 +1,4 @@
+A PHP class that lets you work with DICOM tags, convert to jpg, compress, uncompress, receive, and send images.
+
+SEE: http://www.deanvaughan.org/projects/class_dicom/
+
