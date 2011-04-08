@@ -1,6 +1,6 @@
 <?PHP
 
-define('TOOLKIT_DIR', '/usr/local/dicom/bin');
+define('TOOLKIT_DIR', '/usr/local/bin');
 
 /*
 
@@ -21,7 +21,7 @@ class dicom_tag {
   var $tags = array();
   var $file = -1;
 
-
+### LOAD DICOM TAGS FROM A FILE INTO AN ARRAY ($this->tags). $this->file is the filename of the image.
   function load_tags() {
     $file = $this->file;
     $dump_cmd = TOOLKIT_DIR . "/dcmdump -M +L +Qn $file";
@@ -55,6 +55,7 @@ class dicom_tag {
     }
   }
 
+### AFTER load_tags() HAS BEEN CALLED, USE THIS TO GET A SPECIFIC TAG
   function get_tag($group, $element) {
     $val = '';
     if(isset($this->tags["$group,$element"])) {
@@ -63,6 +64,14 @@ class dicom_tag {
     return($val);
   }
 
+### WRITE TAGS INTO AN IMAGE, $tag_arr SHOULD LOOK LIKE:
+/*
+$tag_arr = array(
+  '0010,0010' => 'VAUGHAN^DEAN',
+  '0008,0080' => 'DEANLAND, AR'
+);
+*/
+### $this->file is the filename of the image.
   function write_tags($tag_arr) {
     if(!is_array($tag_arr)) {
       return(1);
@@ -95,7 +104,8 @@ class dicom_convert {
   var $tiff_file = '';
   var $tn_file = '';
   
-  // REQUIRES IMAGE MAGICK
+### REQUIRES IMAGE MAGICK
+### Convert a DICOM image to JPEG. $this->file is the filename of the image.
   function dcm_to_jpg() {
 
     $filesize = 0;
@@ -153,7 +163,8 @@ class dicom_convert {
 
   }
 
-  // REQUIRES IMAGE MAGICK
+### REQUIRES IMAGE MAGICK
+### Convert $this->file into a JPEG thumbnail.
   function dcm_to_tn() {
     $this->dcm_to_jpg();
     $this->tn_file = $this->jpg_file;
@@ -164,10 +175,7 @@ class dicom_convert {
     return($this->tn_file);
   }
 
-  function jpg_to_dcm() {
-
-  }
-
+### This will uncompress $this->file. 
   function uncompress($new_file = '') {
     if(!$new_file) {
       $new_file = $this->file;
@@ -179,6 +187,7 @@ class dicom_convert {
   }
 
 // THIS REALLY SHOULD BE EXPANDED TO INCLUDE OTHER COMPRESSION OPTIONS
+### This will JPEG losslessly compress $this->file 
   function compress($new_file = '') {
     if(!$new_file) {
       $new_file = $this->file;
@@ -190,6 +199,21 @@ class dicom_convert {
   }
 
 
+  function jpg_to_dcm($arr_info) {
+
+  }
+
+  function pdf_to_dcm($arr_info) {
+
+  }
+
+  function pdf_to_dcmsc($arr_info) {
+
+  }
+
+
+
+
 }
 
 
@@ -198,6 +222,7 @@ class dicom_net {
   var $transfer_syntax = '';
   var $file = '';
 
+### 
   function store_server($port, $dcm_dir, $handler_script, $config_file, $debug = 0) {
     $dflag = '';
     if($debug) {
@@ -207,6 +232,7 @@ class dicom_net {
     system(TOOLKIT_DIR . "/storescp $dflag -td 20 -ta 20 --fork -xf $config_file Default -od $dcm_dir -xcr \"$handler_script \"#p\" \"#f\" \"#c\" \"#a\"\" $port");
   }
 
+###
   function echoscu($host, $port, $my_ae = 'DEANO', $remote_ae = 'DEANO') {
     $ping_cmd = TOOLKIT_DIR . "/echoscu -ta 5 -td 5 -to 5 -aet \"$my_ae\" -aec \"$remote_ae\" $host $port";
     $out = Execute($ping_cmd);
@@ -216,6 +242,7 @@ class dicom_net {
     return($out);
   }
 
+### 
   function send_dcm($host, $port, $my_ae = 'DEANO', $remote_ae = 'DEANO', $send_batch = 0) {
 
     if(!$this->transfer_syntax) {
