@@ -147,7 +147,7 @@ class dicom_convert {
     $this->tn_file = $this->file . '.jpg';
     $this->tn_file = preg_replace('/.jpg$/', '_tn.jpg', $this->tn_file);
 
-    $convert_cmd = TOOLKIT_DIR . "/dcmj2pnm +oj +Jq 75 +Sxv 125 --use-window 1 \"" . $this->tn_file . "\" \"" . $this->tn_file . "\"";
+    $convert_cmd = TOOLKIT_DIR . "/dcmj2pnm +oj +Jq 75 +Sxv 125 --use-window 1 \"" . $this->file . "\" \"" . $this->tn_file . "\"";
     $out = Execute($convert_cmd);
 
     if(file_exists($this->jpg_file)) {
@@ -155,8 +155,11 @@ class dicom_convert {
     }
 
     if($filesize < 10) {
-      $convert_cmd = TOOLKIT_DIR . "/dcmj2pnm +Wm +oj +Jq 75 +Sxv 125 \"" . $this->tn_file . "\" \"" . $this->tn_file . "\"";
+      $convert_cmd = TOOLKIT_DIR . "/dcmj2pnm +Wm +oj +Jq 75 +Sxv 125 \"" . $this->file . "\" \"" . $this->tn_file . "\"";
       $out = Execute($convert_cmd);
+      if($out) {
+        return($out);
+      }
     }
 
     return($this->tn_file);
