@@ -121,42 +121,20 @@ class dicom_convert {
       $this->transfer_syntax = $tags->get_tag('0002', '0010');
     }
 
-    if(strstr($this->transfer_syntax, 'LittleEndian')) {
-      $convert_cmd = TOOLKIT_DIR . "/dcm2pnm +Tn --write-tiff --use-window 1 \"" . $this->file . "\" \"" . $this->tiff_file . "\"";
-      $out = Execute($convert_cmd);
-
-      if(file_exists($this->tiff_file)) {
-        $filesize = filesize($this->tiff_file);
-      }
-
-      if($filesize < 10) {
-        $convert_cmd = TOOLKIT_DIR . "/dcm2pnm +Wm +Tn --write-tiff \"" . $this->file . "\" \"" . $this->tiff_file . "\"";
-        $out = Execute($convert_cmd);
-      }
-
-      $convert_cmd = "convert -quality $jpg_quality \"" . $this->tiff_file . "\" \"" . $this->jpg_file . "\"";
-      $out = Execute($convert_cmd);
-      if(file_exists($this->tiff_file)) {
-        unlink($this->tiff_file);
-      }
+    if(strstr($this->transfer_syntax, 'Baseline') || strstr($this->transfer_syntax, 'Lossless')) {
+      $jpg_quality = 100;
     }
-    else if(strstr($this->transfer_syntax, 'JPEG')) {
 
-      if(strstr($this->transfer_syntax, 'Baseline') || strstr($this->transfer_syntax, 'Lossless')) {
-        $jpg_quality = 100;
-      }
+    $convert_cmd = TOOLKIT_DIR . "/dcmj2pnm +oj +Jq $jpg_quality --use-window 1 \"" . $this->file . "\" \"" . $this->jpg_file . "\"";
+    $out = Execute($convert_cmd);
 
-      $convert_cmd = TOOLKIT_DIR . "/dcmj2pnm +oj +Jq $jpg_quality --use-window 1 \"" . $this->file . "\" \"" . $this->jpg_file . "\"";
+    if(file_exists($this->jpg_file)) {
+      $filesize = filesize($this->jpg_file);
+    }
+
+    if($filesize < 10) {
+      $convert_cmd = TOOLKIT_DIR . "/dcmj2pnm +Wm +oj +Jq $jpg_quality \"" . $this->file . "\" \"" . $this->jpg_file . "\"";
       $out = Execute($convert_cmd);
-
-      if(file_exists($this->jpg_file)) {
-        $filesize = filesize($this->jpg_file);
-      }
-
-      if($filesize < 10) {
-        $convert_cmd = TOOLKIT_DIR . "/dcmj2pnm +Wm +oj +Jq $jpg_quality \"" . $this->file . "\" \"" . $this->jpg_file . "\"";
-        $out = Execute($convert_cmd);
-      }
     }
 
     return($this->jpg_file);
@@ -166,12 +144,21 @@ class dicom_convert {
 ### REQUIRES IMAGE MAGICK
 ### Convert $this->file into a JPEG thumbnail.
   function dcm_to_tn() {
-    $this->dcm_to_jpg();
-    $this->tn_file = $this->jpg_file;
+    $this->tn_file = $this->file . '.jpg';
     $this->tn_file = preg_replace('/.jpg$/', '_tn.jpg', $this->tn_file);
 
-    $convert_cmd = "convert -resize 125 -quality 75 \"" . $this->jpg_file . "\" \"" . $this->tn_file . "\"";
+    $convert_cmd = TOOLKIT_DIR . "/dcmj2pnm +oj +Jq 75 +Sxv 125 --use-window 1 \"" . $this->tn_file . "\" \"" . $this->tn_file . "\"";
     $out = Execute($convert_cmd);
+
+    if(file_exists($this->jpg_file)) {
+      $filesize = filesize($this->jpg_file);
+    }
+
+    if($filesize < 10) {
+      $convert_cmd = TOOLKIT_DIR . "/dcmj2pnm +Wm +oj +Jq 75 +Sxv 125 \"" . $this->tn_file . "\" \"" . $this->tn_file . "\"";
+      $out = Execute($convert_cmd);
+    }
+
     return($this->tn_file);
   }
 
@@ -254,7 +241,7 @@ class dicom_net {
   function store_server($port, $dcm_dir, $handler_script, $config_file, $debug = 0) {
     $dflag = '';
     if($debug) {
-      $dflag = '-d -v ';
+      $dflag = '-v -d ';
     }
 
     system(TOOLKIT_DIR . "/storescp $dflag -td 20 -ta 20 --fork -xf $config_file Default -od $dcm_dir -xcr \"$handler_script \"#p\" \"#f\" \"#c\" \"#a\"\" $port");

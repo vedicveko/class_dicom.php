@@ -20,6 +20,7 @@ if(!file_exists($file)) {
 
 $d = new dicom_convert;
 $d->file = $file;
+$d->dcm_to_jpg();
 $d->dcm_to_tn();
 
 system("ls -lsh $file*");
