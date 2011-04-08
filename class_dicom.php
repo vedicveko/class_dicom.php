@@ -201,6 +201,34 @@ class dicom_convert {
 
   function jpg_to_dcm($arr_info) {
 
+    // USING THE DATA IN OUR ARRAY AND THE TEMPLATE, BUILD AN XML FILE FOR DCMTK
+
+    $xml = file_get_contents($this->template);
+    $temp_xml = $this->temp_dir . '/' . date('YmdGis') . rand(0, 30) . '.xml';
+
+    foreach($arr_info as $tag => $value) {
+      $xml = str_replace("($tag)", $value, $xml);
+    }
+
+    file_put_contents($temp_xml, $xml);
+
+    // Make a DCM file using the XML we just made as the header info.
+    $dcm_file = $this->file . '.dcm';
+    $xml2dcm_cmd = TOOLKIT_DIR . "/xml2dcm $temp_xml $dcm_file";
+    $out = Execute($xml2dcm_cmd);
+    if($out) {
+      return($out);
+    }
+    unlink($temp_xml); // NO LONGER NEEDED
+
+    // Add the JPEG image to the DCM we just made
+    $combine_cmd = TOOLKIT_DIR . "/img2dcm -df $dcm_file -stf $dcm_file -sef $dcm_file \"" . $this->file . "\" $dcm_file";
+    $out = Execute($combine_cmd);
+    if($out) {
+      return($out);
+    }
+
+    return($dcm_file);
   }
 
   function pdf_to_dcm($arr_info) {
