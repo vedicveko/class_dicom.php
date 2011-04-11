@@ -131,9 +131,10 @@ class dicom_convert {
 ### Convert $this->file into a JPEG thumbnail.
 ### Optional $this->tn_size will let you change the width of the thumbnail produced
   function dcm_to_tn() {
+    $filesize = 0;
     $this->tn_file = $this->file . '_tn.jpg';
 
-    $convert_cmd = TOOLKIT_DIR . "/dcmj2pnm +oj +Jq 75 +Sxv " . $this->tn_size ." --use-window 1 \"" . $this->file . "\" \"" . $this->tn_file . "\"";
+    $convert_cmd = TOOLKIT_DIR . "/dcmj2pnm +oj +Jq 75 +Sxv " . $this->tn_size . " --use-window 1 \"" . $this->file . "\" \"" . $this->tn_file . "\"";
     $out = Execute($convert_cmd);
 
     if(file_exists($this->jpg_file)) {
@@ -141,7 +142,7 @@ class dicom_convert {
     }
 
     if($filesize < 10) {
-      $convert_cmd = TOOLKIT_DIR . "/dcmj2pnm +Wm +oj +Jq 75 +Sxv  " . $this->tn_size ." \"" . $this->file . "\" \"" . $this->tn_file . "\"";
+      $convert_cmd = TOOLKIT_DIR . "/dcmj2pnm +Wm +oj +Jq 75 +Sxv  " . $this->tn_size . " \"" . $this->file . "\" \"" . $this->tn_file . "\"";
       $out = Execute($convert_cmd);
       if($out) {
         return($out);
