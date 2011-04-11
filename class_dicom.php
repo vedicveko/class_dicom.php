@@ -144,9 +144,6 @@ class dicom_convert {
     if($filesize < 10) {
       $convert_cmd = TOOLKIT_DIR . "/dcmj2pnm +Wm +oj +Jq 75 +Sxv  " . $this->tn_size . " \"" . $this->file . "\" \"" . $this->tn_file . "\"";
       $out = Execute($convert_cmd);
-      if($out) {
-        return($out);
-      }
     }
 
     return($this->tn_file);
