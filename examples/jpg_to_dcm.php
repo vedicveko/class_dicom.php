@@ -7,7 +7,7 @@
 require_once('../class_dicom.php');
 
 $d = new dicom_convert;
-$d->file = 'test.jpg';
+$d->jpg_file = 'test.jpg';
 $d->template = 'jpg_to_dcm.xml';
 $d->temp_dir = 'dcm_temp';
 

@@ -18,7 +18,7 @@
 <element tag="0008,0022" vr="DA" vm="1" len="8" name="AcquisitionDate">(0008,0012)</element>
 <element tag="0008,0030" vr="TM" vm="1" len="6" name="StudyTime">(0008,0013)</element>
 <element tag="0008,0032" vr="TM" vm="1" len="6" name="AcquisitionTime">(0008,0013)</element>
-<element tag="0008,0050" vr="SH" vm="1" len="16" name="AccessionNumber">0008,0050</element>
+<element tag="0008,0050" vr="SH" vm="1" len="16" name="AccessionNumber">(0008,0050)</element>
 <element tag="0008,0060" vr="CS" vm="1" len="2" name="Modality">CR</element>
 <element tag="0008,0070" vr="LO" vm="1" len="16" name="Manufacturer">DEANO</element>
 <element tag="0008,0080" vr="LO" vm="1" len="22" name="InstitutionName">(0008,0080)</element>

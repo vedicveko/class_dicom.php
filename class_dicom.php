@@ -1,11 +1,11 @@
 <?PHP
 
-define('TOOLKIT_DIR', '/usr/local/bin');
+define('TOOLKIT_DIR', '/usr/local/bin'); // CHANGE THIS IF YOU HAVE DCMTK INSTALLED SOMEWHERE ELSE
 
 /*
 
 Dean Vaughan 2011 <dean@deanvaughan.org>
-http://www.deanvaughan.org
+http://www.deanvaughan.org/projects/class_dicom_php/
 
 */
 
@@ -99,33 +99,20 @@ $tag_arr = array(
 class dicom_convert {
 
   var $file = '';  
-  var $transfer_syntax = '';
   var $jpg_file = '';
-  var $tiff_file = '';
   var $tn_file = '';
+  var $jpg_quality = 100;
+  var $tn_size = 125;
   
-### REQUIRES IMAGE MAGICK
 ### Convert a DICOM image to JPEG. $this->file is the filename of the image.
+### $this->jpg_quality is an optional value (0-100) that'll set the quality of the JPEG produced
   function dcm_to_jpg() {
 
     $filesize = 0;
-    $jpg_quality = 95;
 
     $this->jpg_file = $this->file . '.jpg';
-    $this->tiff_file = $this->file . '.tiff';
    
-    if(!$this->transfer_syntax) {
-      $tags = new dicom_tag;
-      $tags->file = $this->file;
-      $tags->load_tags();
-      $this->transfer_syntax = $tags->get_tag('0002', '0010');
-    }
-
-    if(strstr($this->transfer_syntax, 'Baseline') || strstr($this->transfer_syntax, 'Lossless')) {
-      $jpg_quality = 100;
-    }
-
-    $convert_cmd = TOOLKIT_DIR . "/dcmj2pnm +oj +Jq $jpg_quality --use-window 1 \"" . $this->file . "\" \"" . $this->jpg_file . "\"";
+    $convert_cmd = TOOLKIT_DIR . "/dcmj2pnm +oj +Jq " . $this->jpg_quality . " --use-window 1 \"" . $this->file . "\" \"" . $this->jpg_file . "\"";
     $out = Execute($convert_cmd);
 
     if(file_exists($this->jpg_file)) {
@@ -133,7 +120,7 @@ class dicom_convert {
     }
 
     if($filesize < 10) {
-      $convert_cmd = TOOLKIT_DIR . "/dcmj2pnm +Wm +oj +Jq $jpg_quality \"" . $this->file . "\" \"" . $this->jpg_file . "\"";
+      $convert_cmd = TOOLKIT_DIR . "/dcmj2pnm +Wm +oj +Jq " . $this->jpg_quality . " \"" . $this->file . "\" \"" . $this->jpg_file . "\"";
       $out = Execute($convert_cmd);
     }
 
@@ -141,13 +128,12 @@ class dicom_convert {
 
   }
 
-### REQUIRES IMAGE MAGICK
 ### Convert $this->file into a JPEG thumbnail.
+### Optional $this->tn_size will let you change the width of the thumbnail produced
   function dcm_to_tn() {
-    $this->tn_file = $this->file . '.jpg';
-    $this->tn_file = preg_replace('/.jpg$/', '_tn.jpg', $this->tn_file);
+    $this->tn_file = $this->file . '_tn.jpg';
 
-    $convert_cmd = TOOLKIT_DIR . "/dcmj2pnm +oj +Jq 75 +Sxv 125 --use-window 1 \"" . $this->file . "\" \"" . $this->tn_file . "\"";
+    $convert_cmd = TOOLKIT_DIR . "/dcmj2pnm +oj +Jq 75 +Sxv " . $this->tn_size ." --use-window 1 \"" . $this->file . "\" \"" . $this->tn_file . "\"";
     $out = Execute($convert_cmd);
 
     if(file_exists($this->jpg_file)) {
@@ -155,7 +141,7 @@ class dicom_convert {
     }
 
     if($filesize < 10) {
-      $convert_cmd = TOOLKIT_DIR . "/dcmj2pnm +Wm +oj +Jq 75 +Sxv 125 \"" . $this->file . "\" \"" . $this->tn_file . "\"";
+      $convert_cmd = TOOLKIT_DIR . "/dcmj2pnm +Wm +oj +Jq 75 +Sxv  " . $this->tn_size ." \"" . $this->file . "\" \"" . $this->tn_file . "\"";
       $out = Execute($convert_cmd);
       if($out) {
         return($out);
@@ -166,6 +152,7 @@ class dicom_convert {
   }
 
 ### This will uncompress $this->file. 
+### Optionally, you can give the output file a different name than the original by passing $new_file
   function uncompress($new_file = '') {
     if(!$new_file) {
       $new_file = $this->file;
@@ -178,6 +165,7 @@ class dicom_convert {
 
 // THIS REALLY SHOULD BE EXPANDED TO INCLUDE OTHER COMPRESSION OPTIONS
 ### This will JPEG losslessly compress $this->file 
+### Optionally, you can give the output file a different name than the original by passing $new_file
   function compress($new_file = '') {
     if(!$new_file) {
       $new_file = $this->file;
@@ -188,11 +176,25 @@ class dicom_convert {
     return($new_file);
   }
 
+### See examples/jpg_to_dcm.php for an example, it'll help things make sense. 
+/*
+$this->jpg_file is the JPEG you plan on turning into a DICOM file.
 
+Make an array that maps the values to the tags you want your DICOM file to contain. Like this:
+$arr_info = array(
+  '0010,0010' => 'VAUGHAN^DEAN', // Patient Name 
+  '0008,0080' => 'DEANLAND, AR'  // Institution
+);
+You'll actually need to map more fields out to get a usable DICOM file. examples/jpg_to_dcm.php has an example of what's
+probably the minimum you need to keep most other DICOM software happy with the files you're producing.
+
+Point $this->template towards examples/jpg_to_dcm.xml You'll notice it's a shortened output of dcm2xml. I've put the tag 
+name in () where I want the value to go.
+
+*/
   function jpg_to_dcm($arr_info) {
 
     // USING THE DATA IN OUR ARRAY AND THE TEMPLATE, BUILD AN XML FILE FOR DCMTK
-
     $xml = file_get_contents($this->template);
     $temp_xml = $this->temp_dir . '/' . date('YmdGis') . rand(0, 30) . '.xml';
 
@@ -203,8 +205,8 @@ class dicom_convert {
     file_put_contents($temp_xml, $xml);
 
     // Make a DCM file using the XML we just made as the header info.
-    $dcm_file = $this->file . '.dcm';
-    $xml2dcm_cmd = TOOLKIT_DIR . "/xml2dcm $temp_xml $dcm_file";
+    $this->file = $this->jpg_file . '.dcm';
+    $xml2dcm_cmd = TOOLKIT_DIR . "/xml2dcm $temp_xml " . $this->file;
     $out = Execute($xml2dcm_cmd);
     if($out) {
       return($out);
@@ -212,25 +214,23 @@ class dicom_convert {
     unlink($temp_xml); // NO LONGER NEEDED
 
     // Add the JPEG image to the DCM we just made
-    $combine_cmd = TOOLKIT_DIR . "/img2dcm -df $dcm_file -stf $dcm_file -sef $dcm_file \"" . $this->file . "\" $dcm_file";
+    $combine_cmd = TOOLKIT_DIR . "/img2dcm -df " . $this->file . " -stf " . $this->file . " -sef " . $this->file . " \"" . $this->jpg_file . "\" " . $this->file;
     $out = Execute($combine_cmd);
     if($out) {
       return($out);
     }
 
-    return($dcm_file);
+    return($this->file);
   }
 
+### SOME DAY...
   function pdf_to_dcm($arr_info) {
 
   }
 
-  function pdf_to_dcmsc($arr_info) {
+  function pdf_to_dcmcr($arr_info) {
 
   }
-
-
-
 
 }
 
@@ -240,7 +240,12 @@ class dicom_net {
   var $transfer_syntax = '';
   var $file = '';
 
-### 
+### $port is the tcp port to listen on
+### $dcm_dir is where the DICOM files go after being received. 
+### $handler_script is a program that will be ran after each DICOM file is received. The DICOM image's filename, $dcm_dir, 
+### and the AE titles will be passed via the command line
+### $config_file is the storescp config file. man storescp will get you a run down. The file provided in 
+### examples/store_server_config.cfg will work with all of the common ways of doing things
   function store_server($port, $dcm_dir, $handler_script, $config_file, $debug = 0) {
     $dflag = '';
     if($debug) {
@@ -250,7 +255,7 @@ class dicom_net {
     system(TOOLKIT_DIR . "/storescp $dflag -td 20 -ta 20 --fork -xf $config_file Default -od $dcm_dir -xcr \"$handler_script \"#p\" \"#f\" \"#c\" \"#a\"\" $port");
   }
 
-###
+### Performs an echoscu (DICOM ping) on $host $port
   function echoscu($host, $port, $my_ae = 'DEANO', $remote_ae = 'DEANO') {
     $ping_cmd = TOOLKIT_DIR . "/echoscu -ta 5 -td 5 -to 5 -aet \"$my_ae\" -aec \"$remote_ae\" $host $port";
     $out = Execute($ping_cmd);
@@ -260,7 +265,8 @@ class dicom_net {
     return($out);
   }
 
-### 
+### Sends $this_file to $host $port.
+### If $send_batch is enabled it'll send all of the files in the same directory as $this->file in one association
   function send_dcm($host, $port, $my_ae = 'DEANO', $remote_ae = 'DEANO', $send_batch = 0) {
 
     if(!$this->transfer_syntax) {
@@ -300,7 +306,6 @@ class dicom_net {
     return(0);
 
   }
-
 
 }
 
