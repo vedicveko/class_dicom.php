@@ -137,8 +137,8 @@ class dicom_convert {
     $convert_cmd = TOOLKIT_DIR . "/dcmj2pnm +oj +Jq 75 +Sxv " . $this->tn_size . " --use-window 1 \"" . $this->file . "\" \"" . $this->tn_file . "\"";
     $out = Execute($convert_cmd);
 
-    if(file_exists($this->jpg_file)) {
-      $filesize = filesize($this->jpg_file);
+    if(file_exists($this->tn_file)) {
+      $filesize = filesize($this->tn_file);
     }
 
     if($filesize < 10) {
