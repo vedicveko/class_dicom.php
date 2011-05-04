@@ -31,6 +31,9 @@ class dicom_tag {
       return(0);
     }
 
+#print "$dump\n";
+#exit;
+
     foreach(explode("\n", $dump) as $line) {
 
       $t = preg_match_all("/\((.*)\) [A-Z][A-Z]/", $line, $matches);
@@ -45,10 +48,22 @@ class dicom_tag {
         $val = $matches[1][0];
         $this->tags["$ge"] = $val;
       }
-      else { // a couple of tags are not in []
+
+      if(!$val) { // a couple of tags are not in [] preceded by =
         $t = preg_match_all("/\=(.*)\#/", $line, $matches);
         if(isset($matches[1][0])) {
           $val = $matches[1][0];
+          $this->tags["$ge"] = rtrim($val);
+        }
+      }
+
+      if(!$val) { // a couple of tags are not in []
+        $t = preg_match_all("/[A-Z][A-Z] (.*)\#/", $line, $matches);
+        if(isset($matches[1][0])) {
+          $val = $matches[1][0];
+          if(strstr($val, '(no value available)')) {
+            $val = '';
+          }
           $this->tags["$ge"] = rtrim($val);
         }
       }
