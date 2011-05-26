@@ -34,32 +34,64 @@ class dicom_tag {
 #print "$dump\n";
 #exit;
 
+    $this->tags = array();
+
     foreach(explode("\n", $dump) as $line) {
+
+      $ge = '';
 
       $t = preg_match_all("/\((.*)\) [A-Z][A-Z]/", $line, $matches);
       if(isset($matches[1][0])) {
         $ge = $matches[1][0];
-        $this->tags["$ge"] = '';
+        if(!isset($this->tags["$ge"])) {
+          $this->tags["$ge"] = '';
+        }
+      }
+
+      if(!$ge) {
+        continue;
       }
 
       $val = '';
+      $found = 0;
       $t = preg_match_all("/\[(.*)\]/", $line, $matches);
       if(isset($matches[1][0])) {
+        $found = 1;
         $val = $matches[1][0];
-        $this->tags["$ge"] = $val;
+
+        if(is_array($this->tags["$ge"])) { // Already an array
+          $this->tags["$ge"][] = $val;
+        }
+        else { // Create new array
+          $old_val = $this->tags["$ge"];
+          if($old_val) {
+            $this->tags["$ge"] = array();
+            $this->tags["$ge"][] = $old_val;
+            $this->tags["$ge"][] = $val;
+          }
+          else {
+            $this->tags["$ge"] = $val;
+          }
+        }
       }
 
-      if(!$val) { // a couple of tags are not in [] preceded by =
+      if(is_array($this->tags["$ge"])) {
+        $found = 1;
+      }
+
+      if(!$found) { // a couple of tags are not in [] preceded by =
         $t = preg_match_all("/\=(.*)\#/", $line, $matches);
         if(isset($matches[1][0])) {
+          $found = 1;
           $val = $matches[1][0];
           $this->tags["$ge"] = rtrim($val);
         }
       }
 
-      if(!$val) { // a couple of tags are not in []
+      if(!$found) { // a couple of tags are not in []
         $t = preg_match_all("/[A-Z][A-Z] (.*)\#/", $line, $matches);
         if(isset($matches[1][0])) {
+          $found = 1;
           $val = $matches[1][0];
           if(strstr($val, '(no value available)')) {
             $val = '';
