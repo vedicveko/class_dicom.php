@@ -297,7 +297,7 @@ class dicom_net {
       $dflag = '-v -d ';
     }
 
-    system(TOOLKIT_DIR . "/storescp $dflag -td 20 -ta 20 --fork -xf $config_file Default -od $dcm_dir -xcr \"$handler_script \"#p\" \"#f\" \"#c\" \"#a\"\" $port");
+    system(TOOLKIT_DIR . "/storescp $dflag -dhl -td 20 -ta 20 --fork -xf $config_file Default -od $dcm_dir -xcr \"$handler_script \"#p\" \"#f\" \"#c\" \"#a\"\" $port");
   }
 
 ### Performs an echoscu (DICOM ping) on $host $port
