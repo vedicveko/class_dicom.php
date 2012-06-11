@@ -268,6 +268,75 @@ name in () where I want the value to go.
     return($this->file);
   }
 
+### You will want to change $vid_cmd to be applicable to your system
+  function multiframe_to_video($format = 'mp4', $framerate = 24) {
+
+    $want = 7;
+
+    $temp_dir = dirname($this->file) . '/echo/' . basename($this->file);
+    $vid_file = basename($this->file) . ".$format";
+
+    if(!file_exists($temp_dir)) {
+      mkdir($temp_dir, 0777);
+    }
+
+    # Split each frame into a jpeg
+    $curr_dir = getcwd();
+    chdir($temp_dir);
+    $split_cmd = TOOLKIT_DIR . "/dcmj2pnm +Fa +oj +Jq 100 " . $this->file ." frame";
+    $out = Execute($split_cmd);
+
+    ## rename our jpegs into something suited for ffmpeg (001, 002, 003, ect)
+    $x = 0;
+    if(!file_exists($temp_dir)) {
+      return(0);
+    }
+    if($handle = opendir($temp_dir)) {
+      while(false !== ($file = readdir($handle))) {
+        if($file == '.' || $file == '..') {
+          continue;
+        }
+        if(!strstr($file, '.jpg')) {
+          continue;
+        }
+
+        $new_name = str_replace('frame.', '', $file);
+        $l = strlen($new_name);
+        $diff = $want - $l;
+        while($diff) {
+          $new_name = "0$new_name";
+          $diff--;
+        }
+        if($file != $new_name) {
+          rename("$temp_dir/$file", "$temp_dir/$new_name");
+        }
+        $x++;
+      }
+      closedir($handle);
+    }
+
+    if($x < 10) {
+      $framerate = 10;
+    }
+    $vid_cmd = "/usr/local/bin/ffmpeg -r $framerate -b 5000k -i %03d.jpg -vcodec libx264 $vid_file";
+    $out = Execute($vid_cmd);
+
+/* This is a special case, probably only useful to me.
+    if(strstr($out, 'height not divisible by 2')) {
+      print "Running height fix\n";
+      unlink($vid_file);
+      $out = Execute("mogrify -resize 992x504 *.jpg");
+      $vid_cmd = "/usr/local/bin/ffmpeg -r $framerate -b 5000k -i %03d.jpg -vcodec libx264 $vid_file";
+      $out = Execute($vid_cmd);
+    }
+*/
+
+    chdir($curr_dir);
+
+    return("$temp_dir/$vid_file");
+  }
+
+
 ### SOME DAY...
   function pdf_to_dcm($arr_info) {
 
@@ -369,5 +438,22 @@ function Execute($command) {
 
   return $log;
 }
+
+### I'm keeping this outside of the class so it is easier to get to. This may change in the future.
+function is_dcm($file) {
+  $dump_cmd = TOOLKIT_DIR . "/dcmdump -M +L +Qn $file";
+  $dump = `$dump_cmd`;
+
+  if(strstr($dump, 'error')) {
+    return(0);
+  }
+  else if(strstr($dump, 'Modality')) {
+    return(1);
+  }
+
+  return(0);
+}
+
+
 
 ?>
