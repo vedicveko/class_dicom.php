@@ -25,7 +25,7 @@ class dicom_tag {
   function load_tags() {
     $file = $this->file;
     $dump_cmd = TOOLKIT_DIR . "/dcmdump -M +L +Qn $file";
-    $dump = `$dump_cmd`;
+    $dump = Execute($dump_cmd);
 
     if(!$dump) {
       return(0);
@@ -131,7 +131,7 @@ $tag_arr = array(
 
     $write_cmd = TOOLKIT_DIR . "/dcmodify $str " .
                "-nb \"" . $this->file . "\"";
-    $out = `$write_cmd`;
+    $out = Execute($write_cmd);
     if(!$out) {
       return(0);
     }
@@ -442,7 +442,7 @@ function Execute($command) {
 ### I'm keeping this outside of the class so it is easier to get to. This may change in the future.
 function is_dcm($file) {
   $dump_cmd = TOOLKIT_DIR . "/dcmdump -M +L +Qn $file";
-  $dump = `$dump_cmd`;
+  $dump = Execute($dump_cmd);
 
   if(strstr($dump, 'error')) {
     return(0);
