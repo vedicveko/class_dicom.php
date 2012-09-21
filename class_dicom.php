@@ -269,73 +269,82 @@ name in () where I want the value to go.
   }
 
 ### You will want to change $vid_cmd to be applicable to your system
-  function multiframe_to_video($format = 'mp4', $framerate = 24) {
+  function multiframe_to_video($format = 'mp4', $framerate = 24, $temp_dir = "./video_temp") {
 
     $want = 7;
 
-    $temp_dir = dirname($this->file) . '/echo/' . basename($this->file);
     $vid_file = basename($this->file) . ".$format";
 
-    if(!file_exists($temp_dir)) {
+    if(dirname($this->file) == '.') {
+      $this->file = dirname(__FILE__) . '/' . $this->file;
+    }
+
+    if (!file_exists($temp_dir)) {
       mkdir($temp_dir, 0777);
     }
 
     # Split each frame into a jpeg
     $curr_dir = getcwd();
     chdir($temp_dir);
-    $split_cmd = TOOLKIT_DIR . "/dcmj2pnm +Fa +oj +Jq 100 " . $this->file ." frame";
+    $split_cmd = TOOLKIT_DIR . "/dcmj2pnm +Fa +oj +Jq 100 " . $this->file . " frame";
     $out = Execute($split_cmd);
+
+    if($out) {
+      return("$split_cmd: $out");
+    }
 
     ## rename our jpegs into something suited for ffmpeg (001, 002, 003, ect)
     $x = 0;
-    if(!file_exists($temp_dir)) {
-      return(0);
-    }
-    if($handle = opendir($temp_dir)) {
-      while(false !== ($file = readdir($handle))) {
-        if($file == '.' || $file == '..') {
+
+    if ($handle = opendir('.')) {
+      while (false !== ($file = readdir($handle))) {
+        if ($file == '.' || $file == '..') {
           continue;
         }
-        if(!strstr($file, '.jpg')) {
+        if (!strstr($file, '.jpg')) {
           continue;
         }
 
         $new_name = str_replace('frame.', '', $file);
         $l = strlen($new_name);
         $diff = $want - $l;
-        while($diff) {
+        while ($diff) {
           $new_name = "0$new_name";
           $diff--;
         }
-        if($file != $new_name) {
-          rename("$temp_dir/$file", "$temp_dir/$new_name");
+        if ($file != $new_name) {
+          rename($file, $new_name);
         }
         $x++;
       }
       closedir($handle);
     }
 
-    if($x < 10) {
+    if ($x < 10) {
       $framerate = 10;
     }
+
+    if(file_exists($vid_file)) {
+      unlink($vid_file);
+    }
+
     $vid_cmd = "/usr/local/bin/ffmpeg -r $framerate -b 5000k -i %03d.jpg -vcodec libx264 $vid_file";
     $out = Execute($vid_cmd);
 
-/* This is a special case, probably only useful to me.
-    if(strstr($out, 'height not divisible by 2')) {
-      print "Running height fix\n";
-      unlink($vid_file);
-      $out = Execute("mogrify -resize 992x504 *.jpg");
-      $vid_cmd = "/usr/local/bin/ffmpeg -r $framerate -b 5000k -i %03d.jpg -vcodec libx264 $vid_file";
-      $out = Execute($vid_cmd);
-    }
-*/
+    /* This is a special case, probably only useful to me.
+        if(strstr($out, 'height not divisible by 2')) {
+          print "Running height fix\n";
+          unlink($vid_file);
+          $out = Execute("mogrify -resize 992x504 *.jpg");
+          $vid_cmd = "/usr/local/bin/ffmpeg -r $framerate -b 5000k -i %03d.jpg -vcodec libx264 $vid_file";
+          $out = Execute($vid_cmd);
+        }
+    */
 
     chdir($curr_dir);
 
-    return("$temp_dir/$vid_file");
+    return ("$temp_dir/$vid_file");
   }
-
 
 ### SOME DAY...
   function pdf_to_dcm($arr_info) {
