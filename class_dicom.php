@@ -286,7 +286,7 @@ name in () where I want the value to go.
     # Split each frame into a jpeg
     $curr_dir = getcwd();
     chdir($temp_dir);
-    $split_cmd = TOOLKIT_DIR . "/dcmj2pnm +Fa +oj +Jq 100 " . $this->file . " frame";
+    $split_cmd = TOOLKIT_DIR . "/dcmj2pnm +Fa +oj +Jq 100 \"" . $this->file . "\" frame";
     $out = Execute($split_cmd);
 
     if($out) {
@@ -328,7 +328,7 @@ name in () where I want the value to go.
       unlink($vid_file);
     }
 
-    $vid_cmd = "/usr/local/bin/ffmpeg -r $framerate -b 5000k -i %03d.jpg -vcodec libx264 $vid_file";
+    $vid_cmd = "ffmpeg -r $framerate -b 5000k -i %03d.jpg -vcodec libx264 \"$vid_file\"";
     $out = Execute($vid_cmd);
 
     /* This is a special case, probably only useful to me.
