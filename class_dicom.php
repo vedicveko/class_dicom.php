@@ -1,13 +1,51 @@
 <?PHP
+/*
+Dean Vaughan 2013 <dean@deanvaughan.org>
+http://www.deanvaughan.org/projects/class_dicom_php/
+*/
 
 define('TOOLKIT_DIR', '/usr/local/bin'); // CHANGE THIS IF YOU HAVE DCMTK INSTALLED SOMEWHERE ELSE
 
-/*
+// WINDOWS EXAMPLE
+// define('TOOLKIT_DIR', 'C:/dcmtk/bin');
 
-Dean Vaughan 2011 <dean@deanvaughan.org>
-http://www.deanvaughan.org/projects/class_dicom_php/
+////////////////
+///////////////
+///////////////
+// Are we running under Windows?
+if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+  define('RUNNING_WINDOWS', 1);
+} 
+else {
+  define('RUNNING_WINDOWS', 0);
+}
 
-*/
+// If we're running under windows change where we look for our binaries.
+// Just add .exe to the end of them.
+if(RUNNING_WINDOWS) {
+  define('BIN_DCMDUMP', TOOLKIT_DIR . '/dcmdump.exe');
+  define('BIN_STORESCU', TOOLKIT_DIR . '/storescu.exe');
+  define('BIN_STORESCP', TOOLKIT_DIR . '/storescp.exe');
+  define('BIN_ECHOSCU', TOOLKIT_DIR . '/echoscu.exe');
+  define('BIN_DCMJ2PNM', TOOLKIT_DIR . '/dcmj2pnm.exe');
+  define('BIN_DCMODIFY', TOOLKIT_DIR . '/dcmodify.exe');
+  define('BIN_DCMCJPEG', TOOLKIT_DIR . '/dcmdjpeg.exe');
+  define('BIN_DCMDJPEG', TOOLKIT_DIR . '/dcmcjpeg.exe');
+  define('BIN_XML2DCM', TOOLKIT_DIR . '/xml2dcm.exe');
+  define('BIN_IMG2DCM', TOOLKIT_DIR . '/img2dcm.exe');
+}
+else {
+  define('BIN_DCMDUMP', TOOLKIT_DIR . '/dcmdump');
+  define('BIN_STORESCU', TOOLKIT_DIR . '/storescu');
+  define('BIN_STORESCP', TOOLKIT_DIR . '/storescp');
+  define('BIN_ECHOSCU', TOOLKIT_DIR . '/echoscu');
+  define('BIN_DCMJ2PNM', TOOLKIT_DIR . '/dcmj2pnm');
+  define('BIN_DCMODIFY', TOOLKIT_DIR . '/dcmodify');
+  define('BIN_DCMCJPEG', TOOLKIT_DIR . '/dcmdjpeg');
+  define('BIN_DCMDJPEG', TOOLKIT_DIR . '/dcmcjpeg');
+  define('BIN_XML2DCM', TOOLKIT_DIR . '/xml2dcm');
+  define('BIN_IMG2DCM', TOOLKIT_DIR . '/img2dcm');
+}
 
 /*
 $d = new dicom_tag;
@@ -21,10 +59,19 @@ class dicom_tag {
   var $tags = array();
   var $file = -1;
 
+  function __construct($file = '') {
+    $this->file = $file;
+    if(file_exists($this->file)) {
+      if(is_dcm($this->file)) {
+        $this->load_tags();
+      }
+    }
+  }
+
 ### LOAD DICOM TAGS FROM A FILE INTO AN ARRAY ($this->tags). $this->file is the filename of the image.
   function load_tags() {
     $file = $this->file;
-    $dump_cmd = TOOLKIT_DIR . "/dcmdump -M +L +Qn $file";
+    $dump_cmd = BIN_DCMDUMP . " -M +L +Qn $file";
     $dump = Execute($dump_cmd);
 
     if(!$dump) {
@@ -129,7 +176,7 @@ $tag_arr = array(
       $str .= "-i \"($group)=$element\" ";
     }
 
-    $write_cmd = TOOLKIT_DIR . "/dcmodify $str " .
+    $write_cmd = BIN_DCMODIFY . " $str " .
                "-nb \"" . $this->file . "\"";
     $out = Execute($write_cmd);
     if(!$out) {
@@ -150,6 +197,10 @@ class dicom_convert {
   var $tn_file = '';
   var $jpg_quality = 100;
   var $tn_size = 125;
+
+  function __construct($file = '') {
+    $this->file = $file;
+  }
   
 ### Convert a DICOM image to JPEG. $this->file is the filename of the image.
 ### $this->jpg_quality is an optional value (0-100) that'll set the quality of the JPEG produced
@@ -159,7 +210,7 @@ class dicom_convert {
 
     $this->jpg_file = $this->file . '.jpg';
    
-    $convert_cmd = TOOLKIT_DIR . "/dcmj2pnm +oj +Jq " . $this->jpg_quality . " --use-window 1 \"" . $this->file . "\" \"" . $this->jpg_file . "\"";
+    $convert_cmd = BIN_DCMJ2PNM . " +oj +Jq " . $this->jpg_quality . " --use-window 1 \"" . $this->file . "\" \"" . $this->jpg_file . "\"";
     $out = Execute($convert_cmd);
 
     if(file_exists($this->jpg_file)) {
@@ -167,7 +218,7 @@ class dicom_convert {
     }
 
     if($filesize < 10) {
-      $convert_cmd = TOOLKIT_DIR . "/dcmj2pnm +Wm +oj +Jq " . $this->jpg_quality . " \"" . $this->file . "\" \"" . $this->jpg_file . "\"";
+      $convert_cmd = BIN_DCMJ2PNM . " +Wm +oj +Jq " . $this->jpg_quality . " \"" . $this->file . "\" \"" . $this->jpg_file . "\"";
       $out = Execute($convert_cmd);
     }
 
@@ -181,7 +232,7 @@ class dicom_convert {
     $filesize = 0;
     $this->tn_file = $this->file . '_tn.jpg';
 
-    $convert_cmd = TOOLKIT_DIR . "/dcmj2pnm +oj +Jq 75 +Sxv " . $this->tn_size . " --use-window 1 \"" . $this->file . "\" \"" . $this->tn_file . "\"";
+    $convert_cmd = BIN_DCMJ2PNM . " +oj +Jq 75 +Sxv " . $this->tn_size . " --use-window 1 \"" . $this->file . "\" \"" . $this->tn_file . "\"";
     $out = Execute($convert_cmd);
 
     if(file_exists($this->tn_file)) {
@@ -189,7 +240,7 @@ class dicom_convert {
     }
 
     if($filesize < 10) {
-      $convert_cmd = TOOLKIT_DIR . "/dcmj2pnm +Wm +oj +Jq 75 +Sxv  " . $this->tn_size . " \"" . $this->file . "\" \"" . $this->tn_file . "\"";
+      $convert_cmd = BIN_DCMJ2PNM . " +Wm +oj +Jq 75 +Sxv  " . $this->tn_size . " \"" . $this->file . "\" \"" . $this->tn_file . "\"";
       $out = Execute($convert_cmd);
     }
 
@@ -203,7 +254,7 @@ class dicom_convert {
       $new_file = $this->file;
     }
 
-    $uncompress_cmd = TOOLKIT_DIR . "/dcmdjpeg \"" . $this->file . "\" \"" . $new_file . "\"";
+    $uncompress_cmd = BIN_DCMDJPEG . " \"" . $this->file . "\" \"" . $new_file . "\"";
     $out = Execute($uncompress_cmd);
     return($new_file);
   }
@@ -216,8 +267,8 @@ class dicom_convert {
       $new_file = $this->file;
     }
 
-    $uncompress_cmd = TOOLKIT_DIR . "/dcmcjpeg \"" . $this->file . "\" \"" . $new_file . "\"";
-    $out = Execute($uncompress_cmd);
+    $uncompress_cmd = BIN_DCMCJPEG . " \"" . $this->file . "\" \"" . $new_file . "\"";
+    $out = Execute($compress_cmd);
     return($new_file);
   }
 
@@ -251,7 +302,7 @@ name in () where I want the value to go.
 
     // Make a DCM file using the XML we just made as the header info.
     $this->file = $this->jpg_file . '.dcm';
-    $xml2dcm_cmd = TOOLKIT_DIR . "/xml2dcm $temp_xml " . $this->file;
+    $xml2dcm_cmd = BIN_XML2DCM . " $temp_xml " . $this->file;
     $out = Execute($xml2dcm_cmd);
     if($out) {
       return($out);
@@ -259,7 +310,7 @@ name in () where I want the value to go.
     unlink($temp_xml); // NO LONGER NEEDED
 
     // Add the JPEG image to the DCM we just made
-    $combine_cmd = TOOLKIT_DIR . "/img2dcm -df " . $this->file . " -stf " . $this->file . " -sef " . $this->file . " \"" . $this->jpg_file . "\" " . $this->file;
+    $combine_cmd = BIN_IMG2DCM . " -df " . $this->file . " -stf " . $this->file . " -sef " . $this->file . " \"" . $this->jpg_file . "\" " . $this->file;
     $out = Execute($combine_cmd);
     if($out) {
       return($out);
@@ -286,7 +337,7 @@ name in () where I want the value to go.
     # Split each frame into a jpeg
     $curr_dir = getcwd();
     chdir($temp_dir);
-    $split_cmd = TOOLKIT_DIR . "/dcmj2pnm +Fa +oj +Jq 100 \"" . $this->file . "\" frame";
+    $split_cmd = BIN_DCMJ2PCM . " +Fa +oj +Jq 100 \"" . $this->file . "\" frame";
     $out = Execute($split_cmd);
 
     if($out) {
@@ -375,12 +426,12 @@ class dicom_net {
       $dflag = '-v -d ';
     }
 
-    system(TOOLKIT_DIR . "/storescp $dflag -dhl -td 20 -ta 20 --fork -xf $config_file Default -od $dcm_dir -xcr \"$handler_script \"#p\" \"#f\" \"#c\" \"#a\"\" $port");
+    system(BIN_STORESCP . " $dflag -dhl -td 20 -ta 20 --fork -xf $config_file Default -od $dcm_dir -xcr \"$handler_script \"#p\" \"#f\" \"#c\" \"#a\"\" $port");
   }
 
 ### Performs an echoscu (DICOM ping) on $host $port
   function echoscu($host, $port, $my_ae = 'DEANO', $remote_ae = 'DEANO') {
-    $ping_cmd = TOOLKIT_DIR . "/echoscu -ta 5 -td 5 -to 5 -aet \"$my_ae\" -aec \"$remote_ae\" $host $port";
+    $ping_cmd = BIN_ECHOSCU . " -ta 5 -td 5 -to 5 -aet \"$my_ae\" -aec \"$remote_ae\" $host $port";
     $out = Execute($ping_cmd);
     if(!$out) {
       return(0);
@@ -416,10 +467,10 @@ class dicom_net {
 
     if($send_batch) {
       $to_send = dirname($this->file);
-      $send_command = TOOLKIT_DIR . "/storescu -ta 10 -td 10 -to 10 $ts_flag -aet \"$my_ae\" -aec $remote_ae $host $port +sd \"$to_send\"";
+      $send_command = BIN_STORESCU . " -ta 10 -td 10 -to 10 $ts_flag -aet \"$my_ae\" -aec $remote_ae $host $port +sd \"$to_send\"";
     }
     else {
-      $send_command = TOOLKIT_DIR . "/storescu -ta 10 -td 10 -to 10 $ts_flag -aet \"$my_ae\" -aec $remote_ae $host $port \"$to_send\"";
+      $send_command = BIN_STORESCU . " -ta 10 -td 10 -to 10 $ts_flag -aet \"$my_ae\" -aec $remote_ae $host $port \"$to_send\"";
     }
 
     $out = Execute($send_command); 
@@ -450,7 +501,7 @@ function Execute($command) {
 
 ### I'm keeping this outside of the class so it is easier to get to. This may change in the future.
 function is_dcm($file) {
-  $dump_cmd = TOOLKIT_DIR . "/dcmdump -M +L +Qn $file";
+  $dump_cmd = BIN_DCMDUMP . " -M +L +Qn $file";
   $dump = Execute($dump_cmd);
 
   if(strstr($dump, 'error')) {
