@@ -18,8 +18,7 @@ if(!file_exists($file)) {
   exit;
 }
 
-$d = new dicom_tag;
-$d->file = $file;
+$d = new dicom_tag($file);
 $d->load_tags();
 
 print_r($d->tags);
