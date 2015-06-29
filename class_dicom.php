@@ -337,7 +337,7 @@ name in () where I want the value to go.
     # Split each frame into a jpeg
     $curr_dir = getcwd();
     chdir($temp_dir);
-    $split_cmd = BIN_DCMJ2PCM . " +Fa +oj +Jq 100 \"" . $this->file . "\" frame";
+    $split_cmd = BIN_DCMJ2PNM . " +Fa +oj +Jq 100 \"" . $this->file . "\" frame";
     $out = Execute($split_cmd);
 
     if($out) {
