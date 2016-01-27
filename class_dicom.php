@@ -57,6 +57,8 @@ $name = $d->get_tag('0010', '0010');
 class dicom_tag {
 
   var $tags = array();
+  var $labels = array();
+  var $labeled = array();
   var $file = -1;
 
   function __construct($file = '') {
@@ -145,6 +147,14 @@ class dicom_tag {
           }
           $this->tags["$ge"] = rtrim($val);
         }
+      }
+      
+      
+      //labels
+      $t = preg_match_all("/, [0-9] (.*)/", $line, $matches);
+      if(isset($matches[1][0])) {
+      	$this->labels[$ge] = $matches[1][0];
+      	$this->labeled[$matches[1][0]] = $this->tags[$ge];
       }
     }
   }
