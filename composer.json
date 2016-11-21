@@ -1,0 +1,14 @@
+{
+    "name": "rbraunm/class_dicom",
+    "description": "PHP DICOM File Handler Class by Dean Vaughan utilizing OFFIS DCMTK.",
+    "type": "library",
+    "require": {
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Dean Vaughan"
+        }
+    ],
+    "minimum-stability": "stable"
+}
