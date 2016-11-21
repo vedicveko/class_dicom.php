@@ -1,3 +1,5 @@
+Note that this fork is intended only to provide a source for composer installations. Any issues with the class itself should be directed at the original package author.
+
 A PHP class that lets you work with DICOM tags, convert to jpg, compress, uncompress, receive, and send images.
 
 My aim was to keep the interface as simple as possible while at the same time providing a class that would be easy to grow.
