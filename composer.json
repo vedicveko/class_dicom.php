@@ -1,6 +1,6 @@
 {
     "name": "rbraunm/class_dicom",
-    "description": "PHP DICOM File Handler Class by Dean Vaughan",
+    "description": "PHP DICOM File Handler Class by Dean Vaughan utilizing OFFIS DCMTK.",
     "type": "library",
     "require": {
     },
@@ -8,10 +8,6 @@
     "authors": [
         {
             "name": "Dean Vaughan"
-        },
-		{
-            "name": "Randy Braunm",
-            "email": "randy.braunm@gmail.com"
         }
     ],
     "minimum-stability": "stable"
